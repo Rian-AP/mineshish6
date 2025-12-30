@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mineshish - Ванильное выживание</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Icons (Phosphor Icons) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#5B1CE0',
+                            light: '#A06BFF',
+                            bg: '#050508',
+                            card: '#0F0F16',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'neon-breathe': 'neonBreathe 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        neonBreathe: {
+                            '0%, 100%': { 
+                                transform: 'scale(1)',
+                                filter: 'drop-shadow(0 0 30px rgba(91,28,224,0.4)) brightness(1)'
+                            },
+                            '50%': { 
+                                transform: 'scale(1.03)',
+                                filter: 'drop-shadow(0 0 50px rgba(160,107,255,0.6)) brightness(1.1)'
+                            },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brand-bg text-white overflow-x-hidden selection:bg-brand-dark selection:text-white">
+
+    <!-- Canvas for Particle Effects -->
+    <canvas id="embersCanvas" class="fixed inset-0 z-[-1] pointer-events-none"></canvas>
+    
+    <!-- Background Static Elements -->
+    <div class="fixed inset-0 z-[-1] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
+    <div class="fixed inset-0 z-[-1] bg-[radial-gradient(circle_at_center,transparent_0%,#050508_90%)] pointer-events-none"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 backdrop-blur-xl border-b border-white/5 bg-[#050508]/60">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="flex items-center gap-3 group">
+                <div class="relative w-10 h-10 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-brand-dark blur-lg opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <svg class="relative z-10 w-full h-full transform group-hover:scale-110 transition-transform duration-300" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4L4 12V28L20 36L36 28V12L20 4Z" stroke="#A06BFF" stroke-width="2" stroke-linejoin="round" class="drop-shadow-[0_0_10px_rgba(160,107,255,0.8)]"/>
+                        <path d="M20 14L10 19V29L20 34L30 29V19L20 14Z" fill="url(#paint0_linear)" stroke="#5B1CE0" stroke-width="1"/>
+                        <path d="M20 4V14M36 12L20 20M4 12L20 20M20 36V34" stroke="#5B1CE0" stroke-width="2" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="paint0_linear" x1="20" y1="14" x2="20" y2="34" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#5B1CE0"/>
+                                <stop offset="1" stop-color="#050508"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="text-xl font-black tracking-wide text-white">
+                    MINE<span class="text-brand-light drop-shadow-[0_0_8px_rgba(160,107,255,0.5)]">SHISH</span>
+                </span>
+            </a>
+
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-400">
+                <a href="#" class="hover:text-white transition-colors relative group py-2">
+                    Главная
+                    <span class="absolute bottom-0 left-0 w-full h-0.5 bg-brand-light scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+                </a>
+                <a href="/map" class="hover:text-white transition-colors hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">Карта</a>
+                <a href="/seasons" class="hover:text-white transition-colors">Архив Сезонов</a>
+                <a href="/mods" class="hover:text-white transition-colors">Мод-пак</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="min-h-screen flex items-center justify-center relative pt-20">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-dark/20 blur-[100px] rounded-full pointer-events-none z-[-1]"></div>
+
+        <div class="container mx-auto px-6 text-center z-10">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-brand-light/20 bg-white/5 backdrop-blur-md text-brand-light text-xs font-bold tracking-widest uppercase animate-fade-in-up">
+                <span class="w-2 h-2 rounded-full bg-brand-light animate-pulse"></span>
+                Сервер про всех и для всех
+            </div>
+            
+            <h1 class="text-6xl md:text-9xl font-black mb-8 tracking-tighter leading-none animate-fade-in-up delay-100">
+                <div class="inline-block animate-neon-breathe origin-center">
+                    <span class="relative z-10 text-white">Mine</span><span class="text-transparent bg-clip-text bg-gradient-to-br from-brand-light via-[#d8b4fe] to-brand-dark">shish</span>
+                </div>
+            </h1>
+            
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-in-up delay-200 font-light">
+                Ванильное выживание <span class="text-white font-medium border-b border-brand-dark/50">без границ</span>. Пишите собственную историю, стройте масштабные проекты и станьте частью легенды.
+            </p>
+
+            <button id="discordBtn" class="group relative inline-flex items-center justify-center px-10 py-5 font-bold text-white transition-all duration-300 bg-brand-dark rounded-2xl overflow-hidden hover:scale-105 hover:shadow-[0_0_40px_-10px_rgba(160,107,255,0.6)] animate-fade-in-up delay-300">
+                <div class="absolute inset-0 bg-gradient-to-r from-brand-dark to-brand-light opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"></div>
+                <div class="relative z-10 flex items-center">
+                    <svg class="w-7 h-7 mr-3 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.11,77.11,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.89,105.89,0,0,0,126.6,80.22c1.24-23.28-5.83-47.5-22.17-72.16ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>
+                    Присоединиться
+                </div>
+            </button>
+        </div>
+    </header>
+
+    <!-- Stats Section -->
+    <section id="stats" class="py-10 relative z-20 -mt-20">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Stat 1 -->
+                <div class="relative bg-brand-card/60 backdrop-blur-md rounded-2xl p-1 overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-brand-dark/20 to-transparent opacity-50"></div>
+                    <div class="relative bg-[#0A0A0E] rounded-xl p-6 h-full border border-white/5 group-hover:border-brand-light/30 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-gray-500 text-xs font-bold uppercase tracking-widest">Стабильность</span>
+                            <i class="ph-fill ph-lightning text-brand-light text-xl"></i>
+                        </div>
+                        <div class="text-5xl font-black text-white mb-1"><span class="counter" id="tps-count" data-target="20.0">0</span></div>
+                        <div class="text-sm text-gray-400">TPS Сервера</div>
+                    </div>
+                </div>
+
+                <!-- Stat 2 -->
+                <div class="relative bg-brand-card/60 backdrop-blur-md rounded-2xl p-1 overflow-hidden group transform md:-translate-y-4 shadow-2xl shadow-brand-dark/20">
+                    <div class="absolute inset-0 bg-gradient-to-br from-brand-light/20 to-brand-dark/20 opacity-100"></div>
+                    <div class="relative bg-[#0f0f16] rounded-xl p-6 h-full border border-brand-light/20 group-hover:border-brand-light/50 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-brand-light text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Онлайн
+                            </span>
+                            <i class="ph-fill ph-users text-white text-xl"></i>
+                        </div>
+                        <div class="text-6xl font-black text-white mb-1 drop-shadow-[0_0_15px_rgba(160,107,255,0.5)]">
+                            <span class="counter" id="online-count" data-target="142">0</span>
+                        </div>
+                        <div class="text-sm text-gray-400">Игроков сейчас</div>
+                    </div>
+                </div>
+
+                <!-- Stat 3 -->
+                <div class="relative bg-brand-card/60 backdrop-blur-md rounded-2xl p-1 overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-brand-dark/20 to-transparent opacity-50"></div>
+                    <div class="relative bg-[#0A0A0E] rounded-xl p-6 h-full border border-white/5 group-hover:border-brand-light/30 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-gray-500 text-xs font-bold uppercase tracking-widest">Сообщество</span>
+                            <i class="ph-fill ph-scroll text-brand-light text-xl"></i>
+                        </div>
+                        <div class="text-5xl font-black text-white mb-1"><span class="counter" id="whitelist-count" data-target="3584">0</span></div>
+                        <div class="text-sm text-gray-400">Вайтлист</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Video Section -->
+    <section class="py-24 relative">
+        <div class="container mx-auto px-6">
+            <div class="relative w-full max-w-5xl mx-auto rounded-3xl overflow-hidden bg-black shadow-[0_20px_60px_-15px_rgba(91,28,224,0.4)] border border-white/10 group">
+                <div class="aspect-w-16 aspect-h-9">
+                    <iframe 
+                        class="w-full h-[600px]" 
+                        src="https://www.youtube.com/embed/kKFWr9xbfDM?autoplay=0&controls=1&rel=0"
+                        title="Minecraft Trailer" 
+                        frameborder="0" 
+                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!-- "Why Mineshish" Section -->
+    <section class="py-24 relative bg-gradient-to-b from-transparent to-brand-dark/5">
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                
+                <!-- Left Column: Text & List -->
+                <div>
+                    <!-- ЗАГОЛОВОК -->
+                    <h2 class="text-4xl md:text-5xl font-black mb-12 flex flex-wrap items-center gap-x-4">
+                        <span>Почему</span>
+                        <span class="relative inline-flex items-center">
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-brand-dark/40 blur-[40px] rounded-full -z-10"></div>
+                            <span class="text-white drop-shadow-[0_0_15px_rgba(91,28,224,0.5)]">Mine</span>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-br from-brand-light via-[#d8b4fe] to-brand-dark drop-shadow-[0_0_15px_rgba(160,107,255,0.5)]">shish</span>
+                            <span class="text-brand-light drop-shadow-[0_0_10px_rgba(160,107,255,0.8)]">?</span>
+                        </span>
+                    </h2>
+
+                    <div class="space-y-10">
+                        <!-- Feature 1 -->
+                        <div class="flex gap-6 group">
+                            <div class="w-14 h-14 rounded-2xl bg-[#5B1CE0]/20 flex items-center justify-center text-[#A06BFF] text-2xl shrink-0 group-hover:scale-110 group-hover:bg-[#5B1CE0]/30 transition-all duration-300">
+                                <i class="ph-fill ph-hammer"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white mb-2 group-hover:text-[#A06BFF] transition-colors">Истинная Ваниль</h3>
+                                <p class="text-gray-400 leading-relaxed text-sm md:text-base">
+                                    Никаких приватов, платных проходок или доната, влияющего на баланс. Мы сохраняем дух классического выживания, где всё зависит только от ваших навыков.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Feature 2 -->
+                        <div class="flex gap-6 group">
+                            <div class="w-14 h-14 rounded-2xl bg-pink-500/20 flex items-center justify-center text-pink-400 text-2xl shrink-0 group-hover:scale-110 group-hover:bg-pink-500/30 transition-all duration-300">
+                                <i class="ph-fill ph-heart"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white mb-2 group-hover:text-pink-400 transition-colors">Сообщество и Проекты</h3>
+                                <p class="text-gray-400 leading-relaxed text-sm md:text-base">
+                                    Каждый игрок — неотъемлемая деталь. Масштабные проекты возводятся игроками с нуля, вписывая свои ники в историю сервера.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Feature 3 -->
+                        <div class="flex gap-6 group">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 text-2xl shrink-0 group-hover:scale-110 group-hover:bg-blue-500/30 transition-all duration-300">
+                                <i class="ph-fill ph-shield-check"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">Безопасность и Честность</h3>
+                                <p class="text-gray-400 leading-relaxed text-sm md:text-base">
+                                    Отзывчивая администрация всегда на связи. Мощный античит ставит всех на равный уровень, а защита от гриферов позволяет спать спокойно.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Big Visual Card -->
+                <div class="relative h-[500px] lg:h-[600px] rounded-[2rem] overflow-hidden bg-[#0A0A0E] border border-white/10 group shadow-2xl bg-black">
+                    
+                    <!-- 1. Background Image -->
+                    <div id="dynamicBg" class="absolute inset-0 bg-cover bg-center transition-transform duration-[1500ms] ease-out group-hover:scale-110 will-change-transform opacity-70"></div>
+                    
+                    <!-- 2. Dark Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent"></div>
+
+                    <!-- 3. GHOST TEXT ("MINESHISH") -->
+                    <!-- Изначально scale-150 (вылезает), при наведении scale-90 (уменьшается) и заливается -->
+                    <div class="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none select-none mix-blend-overlay">
+                        <h2 class="text-[100px] md:text-[130px] font-black tracking-widest transition-all duration-1000 ease-in-out transform scale-150 group-hover:scale-[0.85] opacity-20 group-hover:opacity-50 text-transparent group-hover:text-white"
+                            style="-webkit-text-stroke: 2px rgba(255, 255, 255, 1);">
+                            MINESHISH
+                        </h2>
+                    </div>
+
+                    <!-- 4. Bottom Quote -->
+                    <div class="absolute bottom-0 left-0 w-full p-8 md:p-12 text-center z-20">
+                         <!-- Разделитель -->
+                         <div class="w-16 h-1 bg-brand-light mx-auto mb-6 rounded-full shadow-[0_0_10px_#A06BFF]"></div>
+                         
+                         <!-- Текст цитаты -->
+                         <h3 id="dynamicQuote" class="text-3xl md:text-4xl font-bold text-white/90 leading-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
+                            <!-- JS Text -->
+                         </h3>
+                    </div>
+
+                    <!-- 5. Decorative Glow (Вернул родное пятно) -->
+                    <div class="absolute bottom-[-100px] left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-brand-dark/50 blur-[100px] rounded-full pointer-events-none mix-blend-screen"></div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 border-t border-white/5 bg-black/40 text-center text-gray-500 text-sm">
+        <p>&copy; 2025 Mineshish. Not affiliated with Mojang AB.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="js/script.js"></script>
+    <style>
+        @keyframes shimmer { 100% { transform: translateX(100%) skewX(12deg); } }
+    </style>
+</body>
+</html>
